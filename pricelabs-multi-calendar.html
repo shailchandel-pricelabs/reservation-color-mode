@@ -66,6 +66,14 @@
     --dm-high: #A3CBE1;
     --dm-unavail: #E0E0E0;
 
+    /* "Based on Reservation Dates" scale — pickup recency, darkest = most recent */
+    --pu-3d: #58A3E5;
+    --pu-7d: #86C7FE;
+    --pu-14d: #A4C8E7;
+    --pu-30d: #C2DCF1;
+    --pu-30dplus: #E9F6FF;
+    --pu-none: #FBF6EC;   /* no booking at all — warm cream, distinct hue from the blue scale */
+
     --mark-event: #9E63EB;       /* live MC: events star */
     --mark-restrict: #790100;    /* live MC: house-lock */
 
@@ -214,6 +222,33 @@
     content: ''; position: absolute; left: 3px; top: 0;
     width: 3px; height: 7px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg);
   }
+
+  /* radio, matched to the cb-sm checkbox: 14px, coral fill + white dot when checked */
+  input[type=radio].rd-sm {
+    appearance: none; -webkit-appearance: none;
+    width: 14px; height: 14px; margin: 0; flex-shrink: 0;
+    border: 2px solid var(--disabled); border-radius: 50%; background: var(--white);
+    cursor: pointer; position: relative;
+  }
+  input[type=radio].rd-sm:checked { background: var(--coral); border-color: var(--coral); }
+  input[type=radio].rd-sm:checked::after {
+    content: ''; position: absolute; left: 3px; top: 3px; width: 4px; height: 4px;
+    border-radius: 50%; background: #fff;
+  }
+
+  /* ---------------- Settings dropdown ----------------
+     Mirrors .rc-menu's shell; wider to fit the two radio groups without wrapping. */
+  .set-menu {
+    position: absolute; top: calc(100% + 6px); right: 0; z-index: 300;
+    width: 280px; max-height: 520px; overflow-y: auto; padding: 6px 0;
+    background: var(--white); border: 1px solid var(--border); border-radius: 5px;
+    box-shadow: var(--shadow-menu); display: none;
+  }
+  .set-menu.open { display: block; }
+  .set-item { display: flex; align-items: center; gap: 8px; padding: 6px 12px; font-size: 12px; color: var(--ink); cursor: pointer; }
+  .set-item:hover { background: var(--bg); }
+  .set-item span.lbl { flex: 1; }
+  .set-group + .set-group { border-top: 1px solid var(--border-table); margin-top: 4px; }
 
   /* ---------------- Card + scroller ---------------- */
   /* live MC: x=8, 10px radius, 0 2px 4px rgba(0,0,0,.1), 4px of padding on top */
@@ -465,6 +500,17 @@
   .dm-high    { background: var(--dm-high); }
   .dm-unavail { background: var(--dm-unavail); }
 
+  .pu-3d      { background: var(--pu-3d); }
+  .pu-7d      { background: var(--pu-7d); }
+  .pu-14d     { background: var(--pu-14d); }
+  .pu-30d     { background: var(--pu-30d); }
+  .pu-30dplus { background: var(--pu-30dplus); }
+  .pu-none    { background: var(--pu-none); }
+
+  /* a booked night, in reservation-color mode, gets a thin diagonal "booked" cut
+     over its pickup fill rather than a separate icon-only treatment */
+  .pc-booked { background-image: linear-gradient(135deg, transparent calc(50% - 1.5px), rgba(51,51,51,.4) 50%, transparent calc(50% + 1.5px)); }
+
   /* a listing whose pricing could not be fetched — one band across the calendar */
   td.pc-error { background: var(--coral-wash); color: var(--ink-chakra); font-size: 11px; padding: 0 16px; text-align: left; border-right: none; }
 
@@ -683,7 +729,40 @@
       <button class="cbtn"><i class="fa-solid fa-chart-mixed" aria-hidden="true"></i> Add Metrics</button>
       <button class="cbtn"><i class="fa-regular fa-bullseye" aria-hidden="true"></i> Manage Goals</button>
       <button class="cbtn icon-only" aria-label="Map listings"><i class="fa-regular fa-network-wired" aria-hidden="true"></i></button>
-      <button class="cbtn icon-only" aria-label="Settings"><i class="fa-regular fa-gear" aria-hidden="true"></i></button>
+      <div class="tb-wrap">
+        <button class="cbtn icon-only" id="set-trigger" aria-label="Settings" aria-haspopup="true" aria-expanded="false"><i class="fa-regular fa-gear" aria-hidden="true"></i></button>
+        <div class="set-menu" id="set-menu" role="menu" aria-label="Calendar Settings">
+          <div class="set-group">
+            <div class="rc-head">Calendar Settings</div>
+            <label class="set-item"><input type="checkbox" class="cb-sm"><span class="lbl">Show Child Listings</span></label>
+            <label class="set-item"><input type="checkbox" class="cb-sm" checked><span class="lbl">Minimum Stay Nights</span></label>
+            <label class="set-item"><input type="checkbox" class="cb-sm" checked><span class="lbl">Booking Info</span></label>
+            <label class="set-item"><input type="checkbox" class="cb-sm" checked><span class="lbl">Account/Group Date Specific Overrides</span></label>
+            <label class="set-item"><input type="checkbox" class="cb-sm" checked><span class="lbl">Highlight Min/Max Price Dates</span></label>
+            <label class="set-item"><input type="checkbox" class="cb-sm" checked><span class="lbl">Events &amp; Holidays</span></label>
+            <label class="set-item"><input type="checkbox" class="cb-sm"><span class="lbl">Check-in/Check-out Restrictions</span></label>
+          </div>
+          <div class="set-group">
+            <div class="rc-head">Calendar Colors</div>
+            <label class="set-item"><input type="radio" name="cal-color" class="rd-sm" value="demand"><span class="lbl">Demand</span></label>
+            <label class="set-item"><input type="radio" name="cal-color" class="rd-sm" value="recommended"><span class="lbl">Recommended Price vs. Last Year ADR</span></label>
+            <label class="set-item"><input type="radio" name="cal-color" class="rd-sm" value="reservation" checked><span class="lbl">Based on Reservation Dates</span></label>
+            <label class="set-item"><input type="radio" name="cal-color" class="rd-sm" value="none"><span class="lbl">None</span></label>
+          </div>
+          <div class="set-group">
+            <div class="rc-head">Maximum Number of Days</div>
+            <label class="set-item"><input type="radio" name="cal-days" class="rd-sm"><span class="lbl">90</span></label>
+            <label class="set-item"><input type="radio" name="cal-days" class="rd-sm" checked><span class="lbl">180</span></label>
+            <label class="set-item"><input type="radio" name="cal-days" class="rd-sm"><span class="lbl">270 (Might experience slowness)</span></label>
+            <label class="set-item"><input type="radio" name="cal-days" class="rd-sm"><span class="lbl">360 (Might experience slowness)</span></label>
+          </div>
+          <div class="set-group">
+            <div class="rc-head">Other Actions</div>
+            <label class="set-item"><input type="checkbox" class="cb-sm"><span class="lbl">High Contrast Color Mode</span></label>
+            <label class="set-item"><input type="checkbox" class="cb-sm"><span class="lbl">Enable Full Screen</span></label>
+          </div>
+        </div>
+      </div>
       <span class="tb-sep"></span>
       <button class="cbtn icon-only" aria-label="Add"><i class="fa-regular fa-circle-plus" aria-hidden="true"></i></button>
       <button class="cbtn icon-only" aria-label="Help"><i class="fa-regular fa-circle-question" aria-hidden="true"></i></button>
@@ -719,13 +798,25 @@
 <!-- ============ Footer: legend left, paging right ============ -->
 <div class="foot">
   <div class="legend">
-    <div class="legend-row">
+    <div class="legend-row" id="legend-demand" style="display:none">
       <b>Demand:</b>
       <span class="lg"><span class="sw" style="background:var(--dm-low)"></span>Low</span>
       <span class="lg"><span class="sw" style="background:var(--dm-normal)"></span>Normal</span>
       <span class="lg"><span class="sw" style="background:var(--dm-good)"></span>Good</span>
       <span class="lg"><span class="sw" style="background:var(--dm-high)"></span>High</span>
       <span class="lg"><span class="sw" style="background:var(--dm-unavail)"></span>Unavailable</span>
+      <span class="lg"><i class="fa-solid fa-triangle-exclamation m-unbook" aria-hidden="true"></i>Unbookable</span>
+      <span class="lg"><i class="fa-solid fa-moon" aria-hidden="true"></i>Min-stay</span>
+      <span class="lg"><i class="fa-solid fa-house-lock m-restrict" aria-hidden="true"></i>Check-in/Check-out/Both Restricted</span>
+    </div>
+    <div class="legend-row" id="legend-pickup">
+      <b>Pickup:</b>
+      <span class="lg"><span class="sw" style="background:var(--pu-3d)"></span>Last 3d</span>
+      <span class="lg"><span class="sw" style="background:var(--pu-7d)"></span>Last 7d</span>
+      <span class="lg"><span class="sw" style="background:var(--pu-14d)"></span>Last 14d</span>
+      <span class="lg"><span class="sw" style="background:var(--pu-30d)"></span>Last 30d</span>
+      <span class="lg"><span class="sw" style="background:var(--pu-30dplus)"></span>30+ days</span>
+      <span class="lg"><span class="sw" style="background:var(--pu-none)"></span>No Booking</span>
       <span class="lg"><i class="fa-solid fa-triangle-exclamation m-unbook" aria-hidden="true"></i>Unbookable</span>
       <span class="lg"><i class="fa-solid fa-moon" aria-hidden="true"></i>Min-stay</span>
       <span class="lg"><i class="fa-solid fa-house-lock m-restrict" aria-hidden="true"></i>Check-in/Check-out/Both Restricted</span>
@@ -796,6 +887,21 @@ const enabled = new Set(DEFAULT_VIS);
 const order = META.map(c => c.key);
 let pins = ['name'];
 const sort = { key: null, dir: null };
+// Calendar Colors mode, driven by the Settings menu's radio group
+let colorMode = 'reservation';
+function cellColorClass(n) {
+  if (n.unavail) return 'dm-unavail';
+  if (colorMode === 'demand') return 'dm-' + n.dm;
+  // "Based on Reservation Dates": only a night with an actual booking gets a
+  // pickup-recency fill: darker = booked more recently. A night with no
+  // reservation at all stays plain white, regardless of how far out it is.
+  if (colorMode === 'reservation') return n.marks.booked ? 'pu-' + n.pu : 'pu-none';
+  return ''; // recommended / none: no fill, plain cell bg
+}
+// booked nights, in reservation-color mode, carry a diagonal "booked" mark over their fill
+function cellBookedClass(n) {
+  return (colorMode === 'reservation' && n.marks.booked && !n.unavail) ? 'pc-booked' : '';
+}
 const isPinned = k => k === '_sel' || pins.includes(k);
 
 function layout() {
@@ -862,6 +968,7 @@ const LISTINGS = [
 ];
 
 const DEMAND = ['low', 'normal', 'good', 'high'];
+const PICKUP = ['3d', '7d', '14d', '30d', '30dplus'];
 
 // tiny LCG — same sequence every load
 function rng(seed) { let s = seed; return () => (s = (s * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff; }
@@ -872,11 +979,16 @@ function buildNights(l) {
     const roll = r();
     const unavail = roll > 0.93;
     const dm = unavail ? 'unavail' : DEMAND[Math.floor(r() * 4)];
+    // pickup recency: nearer dates skew toward "just booked" (3d/7d), far-out dates
+    // skew toward "no recent pickup" (30d+) — with a little roll-driven jitter
+    const tier = i < 3 ? 0 : i < 7 ? 1 : i < 14 ? 2 : i < 30 ? 3 : 4;
+    const pu = PICKUP[Math.min(4, tier + (r() > 0.8 ? 1 : 0))];
     const base = 7000 + Math.floor(r() * 6000) + (d.we ? 1800 : 0);
     return {
       price: base,
       minStay: 1 + (r() > 0.82 ? 1 : 0),
       dm,
+      pu,
       unavail,
       wk: d.wk,
       marks: {
@@ -978,7 +1090,7 @@ function render() {
     // a listing whose pricing could not be fetched shows one band instead of cells
     const cal = l.noPricing
       ? `<td class="pc-error" colspan="${days.length}">Unable to fetch pricing data — this listing has not been recently reviewed. Please try to click on Sync Now.</td>`
-      : l.nights.map(n => `<td class="pc dm-${n.dm} ${n.wk ? 'wk' : ''}">
+      : l.nights.map(n => `<td class="pc ${cellColorClass(n)} ${cellBookedClass(n)} ${n.wk ? 'wk' : ''}">
             <div class="pc-price">${n.unavail ? '<span class="muted">—</span>' : esc(fmt(n.price))}</div>
             <div class="pc-meta">${n.minStay}<i class="fa-solid fa-moon" aria-hidden="true"></i></div>
             <div class="pc-marks">${marksHTML(n)}</div>
@@ -1035,6 +1147,26 @@ render();
     const col = e.target.dataset && e.target.dataset.col;
     if (!col) return;
     if (e.target.checked) enabled.add(col); else enabled.delete(col);
+    render();
+  });
+  document.addEventListener('click', shut);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') shut(); });
+})();
+
+// ---- Settings dropdown ----
+(() => {
+  const trg = document.getElementById('set-trigger'), menu = document.getElementById('set-menu');
+  const shut = () => { menu.classList.remove('open'); trg.setAttribute('aria-expanded', 'false'); };
+  trg.addEventListener('click', e => {
+    e.stopPropagation();
+    trg.setAttribute('aria-expanded', String(menu.classList.toggle('open')));
+  });
+  menu.addEventListener('click', e => e.stopPropagation());
+  menu.addEventListener('change', e => {
+    if (e.target.name !== 'cal-color') return;
+    colorMode = e.target.value;
+    $('#legend-demand').style.display = colorMode === 'demand' ? '' : 'none';
+    $('#legend-pickup').style.display = colorMode === 'reservation' ? '' : 'none';
     render();
   });
   document.addEventListener('click', shut);
